@@ -1,0 +1,14 @@
+[index]
+# 扫描根目录：建议首次启动由 Python 桌面层写入用户选择的目录。
+roots = ["."]
+exclude_patterns = ["target", ".git", "node_modules", "__pycache__"]
+follow_symlinks = false
+
+[search]
+# 默认结果数量，避免一次性向 UI 推送过多条目。
+result_limit = 50
+debounce_ms = 120
+
+[storage]
+# 索引数据库位置，后续可改为用户数据目录。
+index_db = ".saftsearch/index.db"
