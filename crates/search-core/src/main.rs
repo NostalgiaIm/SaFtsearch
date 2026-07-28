@@ -10,6 +10,7 @@ fn main() -> Result<()> {
         follow_symlinks: false,
     };
 
+
     println!("{}", serde_json::to_string_pretty(&config)?);
     Ok(())
 }
