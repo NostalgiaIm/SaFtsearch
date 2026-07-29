@@ -8,6 +8,7 @@ fn main() -> Result<()> {
         roots: vec![PathBuf::from(".")],
         exclude_patterns: vec!["target".into(), ".git".into()],
         follow_symlinks: false,
+
     };
 
 
