@@ -57,4 +57,5 @@ impl FileFeature {
 pub struct SearchHit {
     pub feature: FileFeature,
     pub score: f32,
+    
 }
