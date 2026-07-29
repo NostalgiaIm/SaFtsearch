@@ -1,6 +1,9 @@
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use std::time::UNIX_EPOCH;
+use walkdir::WalkDir;
+use anyhow::Result;
+
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 /// 索引范围配置：控制扫描根目录、排除规则和符号链接策略。
@@ -59,3 +62,32 @@ pub struct SearchHit {
     pub score: f32,
     
 }
+
+
+//Part2
+pub fn scan_root(root: impl AsRef<Path>, exclude_patterns: &[String]) -> Result<Vec<FileFeature>> {
+    let mut features = Vec::new();
+
+    for entry in WalkDir::new(root) {
+        let entry = match entry {
+            Ok(entry) => entry,
+            Err(_) => continue, // 单个路径失败不影响整体扫描。
+        };
+
+        let path_text = entry.path().to_string_lossy();
+        if exclude_patterns.iter().any(|pattern| path_text.contains(pattern)) {
+            continue;
+        }
+
+        if !entry.file_type().is_file() {
+            continue;
+        }
+
+        if let Ok(feature) = FileFeature::from_path(entry.path()) {
+            features.push(feature);
+        }
+    }
+
+    Ok(features)
+}
+
