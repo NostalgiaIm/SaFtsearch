@@ -15,8 +15,43 @@ pub struct IndexConfig {
 pub struct FileFeature {
     pub path :PathBuf ,
     pub file_name : String ,
-    pub extension :Option<u128> ,
+    pub extension :Option<String> ,
     pub size_bytes : u64,
     pub modified_unix_ms :Option<u128>
 }
 
+impl FileFeature {
+    pub fn from_path(path: impl AsRef<Path>) -> anyhow::Result<Self> {
+        let path = path.as_ref();
+        let metadata = path.metadata()?;
+
+        let file_name = path
+            .file_name()
+            .and_then(|name| name.to_str())
+            .unwrap_or("")
+            .to_string();
+
+        let extension = path
+            .extension()
+            .and_then(|ext| ext.to_str())
+            .map(str::to_lowercase);
+
+        let modified_unix_ms = metadata
+            .modified()
+            .ok()
+            .and_then(|time| time.duration_since(UNIX_EPOCH).ok())
+            .map(|duration| duration.as_millis());
+
+        Ok(Self {
+            path: path.to_path_buf(),
+            file_name,
+            extension,
+            size_bytes: metadata.len(),
+            modified_unix_ms,
+
+        })
+
+    }
+
+
+}
