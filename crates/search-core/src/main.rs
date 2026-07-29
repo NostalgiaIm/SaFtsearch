@@ -8,7 +8,10 @@ fn main() -> Result<()> {
         roots: vec![PathBuf::from(".")],
         exclude_patterns: vec!["target".into(), ".git".into()],
         follow_symlinks: false,
+
     };
+
+
 
 
     println!("{}", serde_json::to_string_pretty(&config)?);
