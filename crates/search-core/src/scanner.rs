@@ -13,7 +13,10 @@ pub fn scan_root(root: impl AsRef<Path>, exclude_patterns: &[String]) -> Result<
         };
 
         let path_text = entry.path().to_string_lossy();
-        if exclude_patterns.iter().any(|pattern| path_text.contains(pattern)) {
+        if exclude_patterns
+            .iter()
+            .any(|pattern| path_text.contains(pattern))
+        {
             continue;
         }
 
