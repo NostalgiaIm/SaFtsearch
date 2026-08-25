@@ -1,4 +1,5 @@
 # SaFtsearch
+**English** | [中文](README.zh-CN.md)
 
 SaFtsearch is an experimental desktop file search application built with Rust and Python.
 
