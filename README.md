@@ -3,7 +3,7 @@
 
 SaFtsearch is an experimental desktop file search application built with Rust and Python.
 
-> Project status: under active development. The repository currently contains the basic framework, early CLI search logic, and learning documents. APIs, commands, configuration fields, and desktop integration may still change.
+> Project status: under active development. The repository currently contains the basic framework, early CLI search logic, a first desktop UI shell, and learning documents. APIs, commands, configuration fields, and desktop integration may still change.
 
 ## Goals
 
@@ -32,7 +32,8 @@ flowchart LR
 - Directory scanning with exclusion patterns.
 - Filename search with simple scoring.
 - JSON output for scan and search results.
-- Python application entry placeholder.
+- Python desktop UI shell with search input, result table, folder selection, and basic result actions.
+- Python service layer that calls the Rust CLI and parses `SearchHit` JSON.
 
 ## Repository Layout
 
@@ -56,7 +57,12 @@ SaFtsearch/
       saftsearch_app/
         __init__.py
         config.py
+        core_client.py
         main.py
+        main_window.py
+        search_service.py
+    tests/
+      test_core_client.py
   docs/
 ```
 
@@ -87,10 +93,15 @@ Search by filename:
 cargo run --bin saftsearch-indexer -- search toml . --limit 10 --exclude target --exclude .git
 ```
 
-Run the Python application placeholder:
+Install the Python desktop dependencies:
 
 ```powershell
-cd python-app\src
+python -m pip install -e .[desktop]
+```
+
+Run the Python desktop UI:
+
+```powershell
 python -m saftsearch_app.main
 ```
 

@@ -12,6 +12,13 @@ desktop = [
   "PySide6>=6.7",
 ]
 
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["python-app/src"]
+
 [tool.ruff]
 line-length = 100
 target-version = "py311"
