@@ -19,7 +19,7 @@ pub fn scan_root(
         let path_text = entry.path().to_string_lossy();
         if exclude_patterns
             .iter()
-            .any(|pattern| path_text.contains(pattern))
+            .any(|pattern| !pattern.is_empty() && path_text.contains(pattern))
         {
             continue;
         }

@@ -257,6 +257,8 @@ python -m saftsearch_app.main report
 
 ### 阶段 7：持久化索引与测试
 
+当前进度：已加入版本化 JSON 索引、`IndexStore` 抽象，以及索引构建、查询、状态 CLI；下一步是接入桌面 UI，并在工具链完整的环境中跑通 Rust 单元测试。
+
 学习内容：
 
 - Rust Book 第 10 章：泛型、trait、生命周期。

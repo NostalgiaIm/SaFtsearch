@@ -31,6 +31,7 @@ flowchart LR
 - Directory scanning with exclusion patterns.
 - Filename search with simple scoring.
 - JSON output for scan and search results.
+- Versioned JSON indexes with build, search, and status commands.
 - Python desktop UI shell with search input, result table, folder selection, and basic result actions.
 - Python service layer that calls the Rust CLI and parses `SearchHit` JSON.
 
@@ -47,6 +48,7 @@ SaFtsearch/
       Cargo.toml
       src/
         lib.rs
+        index.rs
         main.rs
         protocol.rs
         query.rs
@@ -62,6 +64,7 @@ SaFtsearch/
         search_service.py
     tests/
       test_core_client.py
+      test_search_service.py
   docs/
 ```
 
@@ -92,6 +95,14 @@ Search by filename:
 cargo run --bin saftsearch-indexer -- search toml . --limit 10 --exclude target --exclude .git
 ```
 
+Build and query a persistent index:
+
+```powershell
+cargo run --bin saftsearch-indexer -- index build .saftsearch/index.json . --exclude target --exclude .git --exclude .saftsearch
+cargo run --bin saftsearch-indexer -- index status .saftsearch/index.json
+cargo run --bin saftsearch-indexer -- index search .saftsearch/index.json toml --limit 10
+```
+
 Install the Python desktop dependencies:
 
 ```powershell
@@ -104,11 +115,22 @@ Run the Python desktop UI:
 python -m saftsearch_app.main
 ```
 
+Run the Python functional and security tests:
+
+```powershell
+python -m unittest discover -s python-app\tests -v
+```
+
+The current search path validates the query, search root, result limit, and
+exclude patterns before starting Rust. It passes user input as separate
+subprocess arguments with `shell=False`; it does not construct a shell command
+from the search text.
+
 ## Development Plan
 
 1. Build a minimal runnable Rust CLI for scanning and filename search.
 2. Connect the Python desktop layer to the Rust search process.
-3. Add persistent indexing to avoid full rescans on every query.
+3. Add persistent indexing to avoid full rescans on every query. (JSON index implemented; desktop integration is in progress.)
 4. Add filesystem watching for incremental updates.
 5. Improve ranking, filtering, and desktop interactions.
 6. Add full-text indexing after the filename search path is stable.

@@ -1,7 +1,7 @@
 [index]
 # 扫描根目录：建议首次启动由 Python 桌面层写入用户选择的目录。
 roots = ["."]
-exclude_patterns = ["target", ".git", "node_modules", "__pycache__"]
+exclude_patterns = ["target", ".git", ".saftsearch", "node_modules", "__pycache__"]
 follow_symlinks = false
 
 [search]
@@ -10,5 +10,5 @@ result_limit = 50
 debounce_ms = 120
 
 [storage]
-# 索引数据库位置，后续可改为用户数据目录。
-index_db = ".saftsearch/index.db"
+# 第一版使用版本化 JSON 索引，后续可在保持 IndexStore 接口的前提下替换为数据库。
+index_file = ".saftsearch/index.json"

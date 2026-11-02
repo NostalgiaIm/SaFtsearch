@@ -1,0 +1,183 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" fill="none">
+  <title>SaFtsearch application icon</title>
+  <desc>Silver search gear with a subtle mechanical crab silhouette and cyan scan light.</desc>
+
+  <defs>
+    <linearGradient id="background" x1="88" y1="72" x2="930" y2="958" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#344B63"/>
+      <stop offset="0.5" stop-color="#1A2A3D"/>
+      <stop offset="1" stop-color="#0D1828"/>
+    </linearGradient>
+
+    <linearGradient id="backgroundSheen" x1="160" y1="102" x2="760" y2="732" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#8EA8C0" stop-opacity="0.24"/>
+      <stop offset="0.42" stop-color="#4B6680" stop-opacity="0.06"/>
+      <stop offset="1" stop-color="#091321" stop-opacity="0"/>
+    </linearGradient>
+
+    <linearGradient id="metal" x1="178" y1="161" x2="722" y2="738" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F7FAFC"/>
+      <stop offset="0.18" stop-color="#C8D1DA"/>
+      <stop offset="0.48" stop-color="#69798A"/>
+      <stop offset="0.72" stop-color="#EEF2F5"/>
+      <stop offset="1" stop-color="#8796A5"/>
+    </linearGradient>
+
+    <linearGradient id="metalEdge" x1="228" y1="190" x2="670" y2="700" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF" stop-opacity="0.92"/>
+      <stop offset="0.52" stop-color="#B4C0CC" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#536577" stop-opacity="0.85"/>
+    </linearGradient>
+
+    <linearGradient id="innerMetal" x1="267" y1="247" x2="583" y2="626" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#607589"/>
+      <stop offset="0.45" stop-color="#26384D"/>
+      <stop offset="1" stop-color="#111E31"/>
+    </linearGradient>
+
+    <linearGradient id="lens" x1="565" y1="537" x2="792" y2="790" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#273F56"/>
+      <stop offset="0.52" stop-color="#132A42"/>
+      <stop offset="1" stop-color="#091725"/>
+    </linearGradient>
+
+    <linearGradient id="cyanScan" x1="208" y1="265" x2="790" y2="846" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#B9FFFF" stop-opacity="0"/>
+      <stop offset="0.42" stop-color="#65F4FF" stop-opacity="0.9"/>
+      <stop offset="0.58" stop-color="#00CFE8" stop-opacity="0.98"/>
+      <stop offset="1" stop-color="#00A9D2" stop-opacity="0"/>
+    </linearGradient>
+
+    <linearGradient id="crabMetal" x1="329" y1="375" x2="527" y2="577" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#C5D5E3"/>
+      <stop offset="0.45" stop-color="#718CA3"/>
+      <stop offset="1" stop-color="#2E526F"/>
+    </linearGradient>
+
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="170%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="26" stdDeviation="26" flood-color="#020914" flood-opacity="0.55"/>
+    </filter>
+
+    <filter id="smallShadow" x="-30%" y="-30%" width="160%" height="170%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#020914" flood-opacity="0.45"/>
+    </filter>
+
+    <filter id="cyanGlow" x="-60%" y="-60%" width="220%" height="220%" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="14" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <clipPath id="gearCore">
+      <circle cx="418" cy="449" r="198"/>
+    </clipPath>
+
+    <clipPath id="lensCore">
+      <circle cx="686" cy="671" r="111"/>
+    </clipPath>
+  </defs>
+
+  <!-- Rounded macOS-style icon tile. -->
+  <rect x="32" y="32" width="960" height="960" rx="224" fill="url(#background)"/>
+  <rect x="38" y="38" width="948" height="948" rx="218" stroke="#AFC5D8" stroke-opacity="0.16" stroke-width="4"/>
+  <path d="M74 288C137 133 283 74 437 74H744C858 74 950 166 950 280V477C714 401 410 330 74 444V288Z" fill="url(#backgroundSheen)"/>
+  <path d="M106 817C308 918 660 929 918 790" stroke="#6AEAFF" stroke-opacity="0.07" stroke-width="3"/>
+
+  <!-- Magnifying-glass handle sits behind the gear so the two forms feel fused. -->
+  <path d="M745 739L900 894" stroke="#081421" stroke-opacity="0.72" stroke-width="92" stroke-linecap="round" filter="url(#smallShadow)"/>
+  <path d="M745 739L900 894" stroke="url(#metal)" stroke-width="68" stroke-linecap="round"/>
+  <path d="M770 766L897 893" stroke="#F7FBFF" stroke-opacity="0.42" stroke-width="10" stroke-linecap="round"/>
+  <path d="M762 757L890 885" stroke="#3E5D76" stroke-opacity="0.56" stroke-width="8" stroke-linecap="round"/>
+
+  <!-- Main gear teeth. -->
+  <g transform="translate(418 449)" fill="url(#metal)" stroke="#516476" stroke-width="5" filter="url(#shadow)">
+    <rect x="-35" y="-294" width="70" height="94" rx="15"/>
+    <rect x="-35" y="-294" width="70" height="94" rx="15" transform="rotate(30)"/>
+    <rect x="-35" y="-294" width="70" height="94" rx="15" transform="rotate(60)"/>
+    <rect x="-35" y="-294" width="70" height="94" rx="15" transform="rotate(90)"/>
+    <rect x="-35" y="-294" width="70" height="94" rx="15" transform="rotate(120)"/>
+    <rect x="-35" y="-294" width="70" height="94" rx="15" transform="rotate(150)"/>
+    <rect x="-35" y="-294" width="70" height="94" rx="15" transform="rotate(180)"/>
+    <rect x="-35" y="-294" width="70" height="94" rx="15" transform="rotate(210)"/>
+    <rect x="-35" y="-294" width="70" height="94" rx="15" transform="rotate(240)"/>
+    <rect x="-35" y="-294" width="70" height="94" rx="15" transform="rotate(270)"/>
+    <rect x="-35" y="-294" width="70" height="94" rx="15" transform="rotate(300)"/>
+    <rect x="-35" y="-294" width="70" height="94" rx="15" transform="rotate(330)"/>
+    <circle r="252"/>
+  </g>
+
+  <!-- Inner beveled ring and dark cavity provide contrast for the crab silhouette. -->
+  <circle cx="418" cy="449" r="218" fill="url(#metalEdge)" opacity="0.86"/>
+  <circle cx="418" cy="449" r="204" fill="#182A3E" stroke="#D5DEE6" stroke-opacity="0.34" stroke-width="8"/>
+  <circle cx="418" cy="449" r="193" fill="url(#innerMetal)"/>
+  <circle cx="418" cy="449" r="176" stroke="#9FB4C6" stroke-opacity="0.16" stroke-width="2"/>
+
+  <!-- Cyan diagonal scan beam, clipped to the gear cavity. -->
+  <g clip-path="url(#gearCore)" filter="url(#cyanGlow)">
+    <path d="M177 250L232 195L664 627L609 682L177 250Z" fill="url(#cyanScan)" opacity="0.2"/>
+    <path d="M210 234L624 648" stroke="#5FF7FF" stroke-opacity="0.26" stroke-width="18"/>
+    <path d="M226 250L640 664" stroke="#D8FFFF" stroke-opacity="0.75" stroke-width="3"/>
+  </g>
+
+  <!-- Subtle radial marks reinforce the instrument-like character. -->
+  <g stroke="#BFE3F0" stroke-opacity="0.3" stroke-width="5" stroke-linecap="round">
+    <path d="M418 260V278"/>
+    <path d="M607 449H589"/>
+    <path d="M418 638V620"/>
+    <path d="M229 449H247"/>
+    <path d="M552 315L539 328"/>
+    <path d="M552 583L539 570"/>
+    <path d="M284 315L297 328"/>
+    <path d="M284 583L297 570"/>
+  </g>
+
+  <!-- Minimal mechanical crab silhouette. -->
+  <g stroke="url(#crabMetal)" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M350 445C362 396 395 369 438 369C482 369 516 397 526 445" stroke-width="15"/>
+    <path d="M369 438C373 483 394 516 438 522C482 516 503 483 507 438" stroke-width="17"/>
+    <path d="M385 438C400 426 420 421 438 421C456 421 476 426 491 438" stroke-width="8"/>
+    <path d="M383 450C397 468 417 477 438 477C459 477 479 468 493 450" stroke-width="8"/>
+    <path d="M395 405L383 371L400 347" stroke-width="10"/>
+    <path d="M481 405L493 371L476 347" stroke-width="10"/>
+    <circle cx="400" cy="345" r="10" fill="#6EF5FF" stroke="#D5FFFF" stroke-width="4"/>
+    <circle cx="476" cy="345" r="10" fill="#6EF5FF" stroke="#D5FFFF" stroke-width="4"/>
+
+    <path d="M366 425C334 403 303 406 286 431C306 445 331 449 359 441" stroke-width="13"/>
+    <path d="M510 425C542 403 573 406 590 431C570 445 545 449 517 441" stroke-width="13"/>
+    <path d="M286 431L265 414" stroke-width="9"/>
+    <path d="M590 431L611 414" stroke-width="9"/>
+
+    <path d="M368 474L326 495L292 488" stroke-width="10"/>
+    <path d="M367 491L327 525L291 529" stroke-width="10"/>
+    <path d="M382 505L354 547L321 562" stroke-width="10"/>
+    <path d="M508 474L550 495L584 488" stroke-width="10"/>
+    <path d="M509 491L549 525L585 529" stroke-width="10"/>
+    <path d="M494 505L522 547L555 562" stroke-width="10"/>
+  </g>
+
+  <!-- Magnifying-glass lens overlaps the gear at the lower-right. -->
+  <circle cx="686" cy="671" r="151" fill="#071321" fill-opacity="0.76" stroke="#5B7081" stroke-opacity="0.6" stroke-width="10" filter="url(#smallShadow)"/>
+  <circle cx="686" cy="671" r="137" fill="url(#metal)" stroke="#DCE5EC" stroke-width="6"/>
+  <circle cx="686" cy="671" r="111" fill="url(#lens)" stroke="#415A70" stroke-width="5"/>
+
+  <!-- Lens scan line and reflections. -->
+  <g clip-path="url(#lensCore)">
+    <path d="M552 725C620 672 696 647 812 610" stroke="#00D9EF" stroke-opacity="0.2" stroke-width="42" filter="url(#cyanGlow)"/>
+    <path d="M552 725C620 672 696 647 812 610" stroke="#65F7FF" stroke-opacity="0.9" stroke-width="5"/>
+    <path d="M581 596C630 562 696 550 757 568" stroke="#D5FBFF" stroke-opacity="0.48" stroke-width="8" stroke-linecap="round"/>
+    <path d="M598 772C654 800 719 797 774 769" stroke="#00BBD9" stroke-opacity="0.24" stroke-width="6" stroke-linecap="round"/>
+  </g>
+
+  <circle cx="686" cy="671" r="111" stroke="#C5F9FF" stroke-opacity="0.32" stroke-width="3"/>
+  <circle cx="652" cy="625" r="18" fill="#D9FFFF" fill-opacity="0.4" filter="url(#cyanGlow)"/>
+
+  <!-- Small hardware accents keep the icon crisp at reduced sizes. -->
+  <g fill="#DCE8F0">
+    <circle cx="594" cy="774" r="6"/>
+    <circle cx="777" cy="572" r="6"/>
+    <circle cx="807" cy="683" r="5"/>
+  </g>
+  <path d="M138 744C179 821 249 879 332 908" stroke="#7BEFFF" stroke-opacity="0.12" stroke-width="4" stroke-linecap="round"/>
+</svg>

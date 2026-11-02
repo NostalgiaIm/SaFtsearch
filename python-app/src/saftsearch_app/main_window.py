@@ -18,7 +18,7 @@ import sys
 from pathlib import Path
 
 from PySide6.QtCore import QObject, QThread, QTimer, Qt, Signal, Slot
-from PySide6.QtGui import QCloseEvent, QKeySequence, QShortcut
+from PySide6.QtGui import QCloseEvent, QIcon, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QApplication,
     QFileDialog,
@@ -39,7 +39,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from saftsearch_app.config import AppConfig
+from saftsearch_app.config import AppConfig, project_root
 from saftsearch_app.core_client import CoreClientError, SearchResult
 from saftsearch_app.search_service import SearchService
 
@@ -115,6 +115,8 @@ class MainWindow(QMainWindow):
         self.pending_query: str | None = None
 
         self.setWindowTitle("SaFtsearch")
+        # 使用 SVG 作为窗口图标，Qt 会按窗口和任务栏尺寸自动进行高质量缩放。
+        self.setWindowIcon(QIcon(str(project_root() / "assets" / "icons" / "saftsearch-icon.svg")))
         self.resize(1120, 720)
         self.setMinimumSize(760, 480)
 

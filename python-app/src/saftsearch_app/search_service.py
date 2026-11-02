@@ -13,7 +13,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from saftsearch_app.config import AppConfig
-from saftsearch_app.core_client import CoreClient, SearchResult
+from saftsearch_app.core_client import CoreClient, IndexStatus, SearchResult
 
 
 class SearchService:
@@ -30,14 +30,46 @@ class SearchService:
         到多磁盘或多个工作区，而不需要修改外部数据模型。
         """
 
-        if not self.config.index_roots:
-            raise ValueError("At least one search root is required")
-
-        root = Path(self.config.index_roots[0]).resolve()
+        root = self._first_root()
         return self.client.search(
             query=query,
-            root=Path(root),
+            root=root,
             limit=self.config.result_limit,
             exclude_patterns=self.config.exclude_patterns,
             follow_symlinks=self.config.follow_symlinks,
         )
+
+    def build_index(self) -> IndexStatus:
+        """为当前第一个根目录构建持久化索引。"""
+
+        root = self._first_root()
+        return self.client.build_index(
+            index_path=self.config.index_file,
+            root=root,
+            exclude_patterns=self.config.exclude_patterns,
+            follow_symlinks=self.config.follow_symlinks,
+        )
+
+    def search_index(self, query: str) -> list[SearchResult]:
+        """查询持久化索引，不触发目录扫描。"""
+
+        return self.client.search_index(
+            index_path=self.config.index_file,
+            query=query,
+            limit=self.config.result_limit,
+        )
+
+    def index_status(self) -> IndexStatus:
+        """返回当前持久化索引状态。"""
+
+        return self.client.index_status(self.config.index_file)
+
+    def _first_root(self) -> Path:
+        if not self.config.index_roots:
+            raise ValueError("At least one search root is required")
+        root = Path(self.config.index_roots[0]).resolve()
+        if not root.exists():
+            raise ValueError(f"Search root was not found: {root}")
+        if not root.is_dir():
+            raise ValueError(f"Search root is not a directory: {root}")
+        return root
