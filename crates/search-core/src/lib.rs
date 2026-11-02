@@ -1,15 +1,17 @@
-//! 核心搜索库，支持文件特征索引和多关键字检索。
+//! 核心搜索库，支持文件特征索引和文件名检索。
 //!
 //! 主要提供：
 //! - 基于 [`IndexConfig`] 配置的灵活搜索
 //! - 可复用的 [`Searcher`] 结构体，缓存扫描结果以提高多次查询性能
 //! - 兼容旧的单根目录快捷搜索（建议迁移到新 API）
 
+pub mod index;
 pub mod protocol;
 pub mod query;
 pub mod scanner;
 
 // 重新导出核心类型
+pub use index::{IndexStatus, IndexStore, JsonIndexStore, StoredIndex};
 pub use protocol::{FileFeature, IndexConfig, SearchHit};
 
 use anyhow::Result;
@@ -63,7 +65,12 @@ pub fn search_with_config(
 pub fn search(query_text: &str, root: &str, limit: usize) -> Result<Vec<SearchHit>> {
     let config = IndexConfig {
         roots: vec![root.into()],
-        exclude_patterns: vec!["target".into(), ".git".into(), "__pycache__".into()],
+        exclude_patterns: vec![
+            "target".into(),
+            ".git".into(),
+            ".saftsearch".into(),
+            "__pycache__".into(),
+        ],
         follow_symlinks: false,
     };
     search_with_config(&config, query_text, limit)
@@ -75,7 +82,12 @@ pub fn search(query_text: &str, root: &str, limit: usize) -> Result<Vec<SearchHi
 pub fn default_config(root: &str) -> IndexConfig {
     IndexConfig {
         roots: vec![root.into()],
-        exclude_patterns: vec!["target".into(), ".git".into(), "__pycache__".into()],
+        exclude_patterns: vec![
+            "target".into(),
+            ".git".into(),
+            ".saftsearch".into(),
+            "__pycache__".into(),
+        ],
         follow_symlinks: false,
     }
 }

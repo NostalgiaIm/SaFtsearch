@@ -25,11 +25,21 @@ class AppConfig(BaseModel):
 
     index_roots: list[Path] = Field(default_factory=lambda: [Path.home()])
     exclude_patterns: list[str] = Field(
-        default_factory=lambda: ["target", ".git", "node_modules", "__pycache__"]
+        default_factory=lambda: [
+            "target",
+            ".git",
+            ".saftsearch",
+            "node_modules",
+            "__pycache__",
+        ]
     )
-    result_limit: int = 50
-    debounce_ms: int = 120
+    # 限制结果规模，避免异常配置让 UI 一次加载过多数据。
+    result_limit: int = Field(default=50, ge=1, le=500)
+    debounce_ms: int = Field(default=120, ge=0, le=5000)
     follow_symlinks: bool = False
+    index_file: Path = Field(
+        default_factory=lambda: project_root() / ".saftsearch" / "index.json"
+    )
     # 开发阶段优先使用 debug 构建，方便修改 Rust 后马上验证。
     # 使用绝对路径是为了避免启动目录不同导致“找不到 Rust 内核”。
     core_binary: Path = Field(
