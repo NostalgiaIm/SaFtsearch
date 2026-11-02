@@ -11,6 +11,7 @@ SearchService 位于 UI 和 CoreClient 之间：
 from __future__ import annotations
 
 from pathlib import Path
+from threading import Event
 
 from saftsearch_app.config import AppConfig
 from saftsearch_app.core_client import CoreClient, IndexStatus, SearchResult
@@ -23,20 +24,26 @@ class SearchService:
         self.config = config
         self.client = CoreClient(config.core_binary)
 
-    def search(self, query: str) -> list[SearchResult]:
-        """搜索第一个索引根目录。
+    def search(
+        self,
+        query: str,
+        root: Path | None = None,
+        cancel_event: Event | None = None,
+    ) -> list[SearchResult]:
+        """搜索指定目录；未显式传入时使用第一个配置根目录。
 
-        当前阶段先支持一个根目录，配置仍然保留列表结构，方便后续扩展
-        到多磁盘或多个工作区，而不需要修改外部数据模型。
+        UI 会在任务启动前固定 ``root``，避免用户切换目录后，正在运行的
+        worker 读取到已经变化的配置。
         """
 
-        root = self._first_root()
+        root = self._validated_root(root) if root is not None else self._first_root()
         return self.client.search(
             query=query,
             root=root,
             limit=self.config.result_limit,
             exclude_patterns=self.config.exclude_patterns,
             follow_symlinks=self.config.follow_symlinks,
+            cancel_event=cancel_event,
         )
 
     def build_index(self) -> IndexStatus:
@@ -67,7 +74,11 @@ class SearchService:
     def _first_root(self) -> Path:
         if not self.config.index_roots:
             raise ValueError("At least one search root is required")
-        root = Path(self.config.index_roots[0]).resolve()
+        return self._validated_root(self.config.index_roots[0])
+
+    @staticmethod
+    def _validated_root(root: Path) -> Path:
+        root = Path(root).resolve()
         if not root.exists():
             raise ValueError(f"Search root was not found: {root}")
         if not root.is_dir():

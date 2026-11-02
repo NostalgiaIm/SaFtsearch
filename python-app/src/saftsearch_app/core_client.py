@@ -10,6 +10,8 @@ from __future__ import annotations
 import json
 import math
 import subprocess
+import threading
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -17,6 +19,10 @@ from typing import Any
 
 class CoreClientError(RuntimeError):
     """Rust 内核不可用、执行失败或返回数据格式错误时抛出的异常。"""
+
+
+class CoreClientCancelled(CoreClientError):
+    """用户取消当前 Rust 操作时抛出，UI 不应把它显示成失败。"""
 
 
 # 当前阶段使用一次性 CLI 搜索，因此需要限制外部输入规模，避免
@@ -257,26 +263,63 @@ class CoreClient:
         command: list[str],
         timeout_message: str,
         timeout_seconds: float | None = None,
+        cancel_event: threading.Event | None = None,
     ) -> str:
         self._ensure_binary()
+        if cancel_event is not None and cancel_event.is_set():
+            raise CoreClientCancelled("Rust operation was cancelled")
+
+        effective_timeout = (
+            self.timeout_seconds if timeout_seconds is None else timeout_seconds
+        )
+        deadline = time.monotonic() + effective_timeout
+
         try:
-            completed = subprocess.run(
+            process = subprocess.Popen(
                 command,
                 text=True,
-                capture_output=True,
-                timeout=self.timeout_seconds if timeout_seconds is None else timeout_seconds,
-                check=False,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
                 shell=False,
             )
-        except subprocess.TimeoutExpired as exc:
-            raise CoreClientError(timeout_message) from exc
         except OSError as exc:
             raise CoreClientError(f"Could not start Rust core: {exc}") from exc
 
-        if completed.returncode != 0:
-            message = completed.stderr.strip() or "Rust core returned a non-zero exit code"
+        while True:
+            if cancel_event is not None and cancel_event.is_set():
+                self._stop_process(process)
+                process.communicate()
+                raise CoreClientCancelled("Rust operation was cancelled")
+
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                self._stop_process(process)
+                process.communicate()
+                raise CoreClientError(timeout_message)
+
+            try:
+                stdout, stderr = process.communicate(timeout=min(0.1, remaining))
+                break
+            except subprocess.TimeoutExpired:
+                continue
+
+        if process.returncode != 0:
+            message = stderr.strip() or "Rust core returned a non-zero exit code"
             raise CoreClientError(message)
-        return completed.stdout
+        return stdout
+
+    @staticmethod
+    def _stop_process(process: subprocess.Popen[str]) -> None:
+        """尽快终止子进程，并在普通终止失败时强制结束。"""
+
+        if process.poll() is not None:
+            return
+        process.terminate()
+        try:
+            process.wait(timeout=2.0)
+        except subprocess.TimeoutExpired:
+            process.kill()
+            process.wait(timeout=2.0)
 
     def _build_command(
         self,
@@ -327,6 +370,7 @@ class CoreClient:
         limit: int,
         exclude_patterns: list[str],
         follow_symlinks: bool,
+        cancel_event: threading.Event | None = None,
     ) -> list[SearchResult]:
         """调用 Rust `search` 子命令并解析 SearchHit 数组。"""
 
@@ -338,7 +382,13 @@ class CoreClient:
             follow_symlinks=follow_symlinks,
         )
 
-        return parse_search_payload(self._run(command, "Rust search timed out"))
+        return parse_search_payload(
+            self._run(
+                command,
+                "Rust search timed out",
+                cancel_event=cancel_event,
+            )
+        )
 
     def build_index(
         self,

@@ -35,6 +35,8 @@ flowchart LR
 - Versioned JSON indexes with build, search, and status commands.
 - Python desktop UI shell with search input, result table, folder selection, and basic result actions.
 - Python service layer that calls the Rust CLI and parses `SearchHit` JSON.
+- Explicit button/Enter search in direct-scan mode, with cancellable Rust subprocesses.
+- Folder changes discard stale results and cancel searches from the previous folder.
 
 ## Repository Layout
 
@@ -65,6 +67,7 @@ SaFtsearch/
         search_service.py
     tests/
       test_core_client.py
+      test_main_window.py
       test_search_service.py
 ```
 
@@ -115,6 +118,12 @@ Run the Python desktop UI:
 python -m saftsearch_app.main
 ```
 
+Choose a folder before searching, enter part of a file name, and press Enter or
+click **Search**. Direct-scan mode does not search automatically while typing,
+because every query currently traverses the selected directory. Changing the
+folder or closing the window cancels an active scan. File contents are not
+searched yet.
+
 Run the Python functional and security tests:
 
 ```powershell
@@ -124,7 +133,9 @@ python -m unittest discover -s python-app\tests -v
 The current search path validates the query, search root, result limit, and
 exclude patterns before starting Rust. It passes user input as separate
 subprocess arguments with `shell=False`; it does not construct a shell command
-from the search text.
+from the search text. The desktop client can terminate an active Rust process
+when the user changes folders or closes the window, and it ignores results from
+an earlier folder.
 
 ## Development Plan
 

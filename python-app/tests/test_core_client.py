@@ -4,16 +4,20 @@
 Rust stdout 的 JSON 结构是否能被 Python 桌面层正确转换。
 """
 
+import sys
+import time
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from unittest.mock import patch
+from threading import Event, Timer
+from unittest.mock import Mock, patch
 
 from saftsearch_app.core_client import (
     MAX_EXCLUDE_PATTERN_LENGTH,
     MAX_EXCLUDE_PATTERNS,
     MAX_QUERY_LENGTH,
     CoreClient,
+    CoreClientCancelled,
     CoreClientError,
     parse_index_status_payload,
     parse_search_payload,
@@ -114,17 +118,35 @@ class CoreClientValidationTests(unittest.TestCase):
             binary = root / "saftsearch-indexer.exe"
             binary.write_bytes(b"test binary placeholder")
             client = CoreClient(binary)
-            completed = type(
-                "Completed",
-                (),
-                {"returncode": 0, "stdout": "[]", "stderr": ""},
-            )()
+            process = Mock()
+            process.communicate.return_value = ("[]", "")
+            process.returncode = 0
 
-            with patch("saftsearch_app.core_client.subprocess.run", return_value=completed) as run:
+            with patch(
+                "saftsearch_app.core_client.subprocess.Popen", return_value=process
+            ) as popen:
                 results = client.search("report", root, 10, [], False)
 
         self.assertEqual(results, [])
-        self.assertFalse(run.call_args.kwargs["shell"])
+        self.assertFalse(popen.call_args.kwargs["shell"])
+
+    def test_running_process_can_be_cancelled_promptly(self) -> None:
+        client = CoreClient(Path(sys.executable), timeout_seconds=5.0)
+        cancel_event = Event()
+        timer = Timer(0.2, cancel_event.set)
+        started = time.monotonic()
+        timer.start()
+        try:
+            with self.assertRaises(CoreClientCancelled):
+                client._run(
+                    [sys.executable, "-c", "import time; time.sleep(10)"],
+                    "test process timed out",
+                    cancel_event=cancel_event,
+                )
+        finally:
+            timer.cancel()
+
+        self.assertLess(time.monotonic() - started, 3.0)
 
     def test_index_status_payload_is_typed(self) -> None:
         status = parse_index_status_payload(
@@ -150,28 +172,25 @@ class CoreClientValidationTests(unittest.TestCase):
             binary.write_bytes(b"test binary placeholder")
             index_path = root / ".saftsearch" / "index.json"
             client = CoreClient(binary)
-            completed = type(
-                "Completed",
-                (),
-                {
-                    "returncode": 0,
-                    "stdout": (
-                        '{"format_version":1,"created_unix_ms":1,'
-                        f'"index_path":"{index_path.as_posix()}",'
-                        f'"roots":["{root.as_posix()}"],"file_count":2}}'
-                    ),
-                    "stderr": "",
-                },
-            )()
+            process = Mock()
+            process.communicate.return_value = (
+                '{"format_version":1,"created_unix_ms":1,'
+                f'"index_path":"{index_path.as_posix()}",'
+                f'"roots":["{root.as_posix()}"],"file_count":2}}',
+                "",
+            )
+            process.returncode = 0
 
-            with patch("saftsearch_app.core_client.subprocess.run", return_value=completed) as run:
+            with patch(
+                "saftsearch_app.core_client.subprocess.Popen", return_value=process
+            ) as popen:
                 status = client.build_index(index_path, root, ["target"], False)
 
-        command = run.call_args.args[0]
+        command = popen.call_args.args[0]
         self.assertEqual(status.file_count, 2)
         self.assertEqual(command[1:3], ["index", "build"])
         self.assertIn("--exclude", command)
-        self.assertFalse(run.call_args.kwargs["shell"])
+        self.assertFalse(popen.call_args.kwargs["shell"])
 
     def test_index_search_requires_existing_index(self) -> None:
         with TemporaryDirectory() as directory:
