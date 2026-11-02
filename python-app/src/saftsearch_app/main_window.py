@@ -16,8 +16,9 @@ import os
 import subprocess
 import sys
 from pathlib import Path
+from threading import Event
 
-from PySide6.QtCore import QObject, QThread, QTimer, Qt, Signal, Slot
+from PySide6.QtCore import QObject, QThread, Qt, Signal, Slot
 from PySide6.QtGui import QCloseEvent, QIcon, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QApplication,
@@ -40,7 +41,11 @@ from PySide6.QtWidgets import (
 )
 
 from saftsearch_app.config import AppConfig, project_root
-from saftsearch_app.core_client import CoreClientError, SearchResult
+from saftsearch_app.core_client import (
+    CoreClientCancelled,
+    CoreClientError,
+    SearchResult,
+)
 from saftsearch_app.search_service import SearchService
 
 
@@ -79,24 +84,41 @@ class SearchWorker(QObject):
     直接修改控件。
     """
 
-    finished = Signal(list)
+    finished = Signal(list, str)
     failed = Signal(str)
+    cancelled = Signal()
 
-    def __init__(self, service: SearchService, query: str) -> None:
+    def __init__(self, service: SearchService, query: str, root: Path) -> None:
         super().__init__()
         self.service = service
         self.query = query
+        self.root = root
+        self.cancel_event = Event()
+
+    def cancel(self) -> None:
+        """请求停止当前 Rust 子进程。"""
+
+        self.cancel_event.set()
 
     @Slot()
     def run(self) -> None:
         """在线程中调用 Rust，并把结果或错误发送给主窗口。"""
 
         try:
-            results = self.service.search(self.query)
+            results = self.service.search(
+                self.query,
+                root=self.root,
+                cancel_event=self.cancel_event,
+            )
+        except CoreClientCancelled:
+            self.cancelled.emit()
         except (CoreClientError, OSError, ValueError) as exc:
             self.failed.emit(str(exc))
         else:
-            self.finished.emit(results)
+            if self.cancel_event.is_set():
+                self.cancelled.emit()
+            else:
+                self.finished.emit(results, str(self.root))
 
 
 class MainWindow(QMainWindow):
@@ -110,9 +132,7 @@ class MainWindow(QMainWindow):
         self.search_thread: QThread | None = None
         self.search_worker: SearchWorker | None = None
         self.current_results: list[SearchResult] = []
-        # 如果用户在旧搜索尚未完成时继续输入，保存最新查询，旧任务结束后
-        # 自动补发一次，避免用户必须再次按 Enter。
-        self.pending_query: str | None = None
+        self.close_requested = False
 
         self.setWindowTitle("SaFtsearch")
         # 使用 SVG 作为窗口图标，Qt 会按窗口和任务栏尺寸自动进行高质量缩放。
@@ -253,7 +273,11 @@ class MainWindow(QMainWindow):
         focus_shortcut.activated.connect(self._focus_search)
 
     def _connect_signals(self) -> None:
-        """连接控件信号，并配置输入防抖。"""
+        """连接控件信号。
+
+        直接扫描模式只在点击按钮或按 Enter 时搜索，避免每次输入停顿都
+        重新遍历目录。接入持久化索引后再恢复实时防抖搜索。
+        """
 
         self.search_button.clicked.connect(self._start_search)
         self.search_input.returnPressed.connect(self._start_search)
@@ -263,14 +287,6 @@ class MainWindow(QMainWindow):
         self.open_button.clicked.connect(self._open_selected_result)
         self.open_folder_button.clicked.connect(self._open_selected_folder)
         self.copy_button.clicked.connect(self._copy_selected_path)
-
-        # 用户连续输入时不立即启动多个扫描任务。定时器每次输入都重置，
-        # 只有停止输入 debounce_ms 后才真正调用 Rust。
-        self.search_debounce = QTimer(self)
-        self.search_debounce.setSingleShot(True)
-        self.search_debounce.setInterval(self.config.debounce_ms)
-        self.search_debounce.timeout.connect(self._start_search)
-        self.search_input.textChanged.connect(self._schedule_search)
 
     def _apply_style(self) -> None:
         """应用轻量样式，让界面先具备稳定的桌面工具视觉层次。"""
@@ -359,20 +375,9 @@ class MainWindow(QMainWindow):
         self.search_input.setFocus()
         self.search_input.selectAll()
 
-    @Slot(str)
-    def _schedule_search(self, query: str) -> None:
-        """根据输入内容安排防抖搜索。"""
-
-        if not query.strip():
-            self.search_debounce.stop()
-            self._clear_results("Type a file name to search")
-            return
-
-        self.search_debounce.start()
-
     @Slot()
     def _start_search(self) -> None:
-        """启动一次后台搜索，并取消/收尾旧任务。"""
+        """为当前查询和目录启动一次后台搜索。"""
 
         query = self.search_input.text().strip()
         if not query:
@@ -380,33 +385,43 @@ class MainWindow(QMainWindow):
             return
 
         if self.search_thread is not None and self.search_thread.isRunning():
-            # 当前 Rust CLI 是一次性任务，不能安全地强制终止。
-            # 让旧任务自然结束；任务结束后会自动执行最新查询。
-            self.pending_query = query
-            self.status_bar.showMessage("Finishing the current search...")
+            self.status_bar.showMessage("A search is already running")
             return
 
+        if not self.config.index_roots:
+            self._handle_error("At least one search root is required")
+            return
+
+        root = Path(self.config.index_roots[0]).resolve()
         self.config.result_limit = self.limit_spin.value()
         self.search_button.setEnabled(False)
-        self.status_bar.showMessage(f"Searching for '{query}'...")
+        self.status_bar.showMessage(f"Searching for '{query}' in {root}...")
         self._clear_selection()
 
         self.search_thread = QThread(self)
-        self.search_worker = SearchWorker(self.service, query)
+        self.search_worker = SearchWorker(self.service, query, root)
         self.search_worker.moveToThread(self.search_thread)
         self.search_thread.started.connect(self.search_worker.run)
         self.search_worker.finished.connect(self._handle_results)
         self.search_worker.failed.connect(self._handle_error)
+        self.search_worker.cancelled.connect(self._handle_cancelled)
         self.search_worker.finished.connect(self.search_thread.quit)
         self.search_worker.failed.connect(self.search_thread.quit)
+        self.search_worker.cancelled.connect(self.search_thread.quit)
         self.search_worker.finished.connect(self.search_worker.deleteLater)
         self.search_worker.failed.connect(self.search_worker.deleteLater)
+        self.search_worker.cancelled.connect(self.search_worker.deleteLater)
         self.search_thread.finished.connect(self._finish_search_thread)
         self.search_thread.start()
 
-    @Slot(list)
-    def _handle_results(self, results: list[SearchResult]) -> None:
+    @Slot(list, str)
+    def _handle_results(self, results: list[SearchResult], searched_root: str) -> None:
         """在 Qt 主线程中将 Rust 结果填入表格。"""
+
+        current_root = Path(self.config.index_roots[0]).resolve()
+        if Path(searched_root) != current_root:
+            self.status_bar.showMessage("Ignored results from the previous folder")
+            return
 
         self.current_results = results
         self.results_table.setRowCount(0)
@@ -439,6 +454,12 @@ class MainWindow(QMainWindow):
         QMessageBox.warning(self, "Search failed", message)
 
     @Slot()
+    def _handle_cancelled(self) -> None:
+        """取消属于正常控制流，不弹出错误对话框。"""
+
+        self.status_bar.showMessage("Previous search cancelled")
+
+    @Slot()
     def _finish_search_thread(self) -> None:
         """释放线程对象，避免连续搜索时积累线程实例。"""
 
@@ -448,15 +469,8 @@ class MainWindow(QMainWindow):
         self.search_worker = None
         self.search_button.setEnabled(True)
 
-        if self.pending_query is not None:
-            pending_query = self.pending_query
-            self.pending_query = None
-            if pending_query != self.search_input.text().strip():
-                self.search_input.blockSignals(True)
-                self.search_input.setText(pending_query)
-                self.search_input.blockSignals(False)
-            self.search_debounce.stop()
-            self._start_search()
+        if self.close_requested:
+            self.close()
 
     @Slot()
     def _choose_root(self) -> None:
@@ -467,9 +481,15 @@ class MainWindow(QMainWindow):
         if not selected:
             return
 
+        was_running = self.search_thread is not None and self.search_thread.isRunning()
+        if was_running and self.search_worker is not None:
+            self.search_worker.cancel()
+
         self.config.index_roots = [Path(selected)]
         self._update_root_label()
-        self._clear_results("Search folder changed")
+        self._clear_results("Search folder changed. Press Search to start.")
+        if was_running:
+            self.status_bar.showMessage("Cancelling the previous folder search...")
 
     def _update_root_label(self) -> None:
         """刷新界面上的当前扫描目录文本。"""
@@ -572,16 +592,13 @@ class MainWindow(QMainWindow):
         self.status_bar.showMessage("Path copied")
 
     def closeEvent(self, event: QCloseEvent) -> None:
-        """关闭窗口时保护后台搜索线程。
-
-        当前阶段 Rust CLI 由 ``subprocess.run`` 阻塞执行，Qt 无法在不破坏
-        子进程状态的前提下立即取消它。因此搜索中关闭窗口时先拒绝关闭，
-        等本次搜索结束后再允许退出。后续改为常驻 Rust 服务时，可以在
-        协议层增加 cancel 请求，再把这里改成真正的取消流程。
-        """
+        """关闭窗口前取消子进程并等待后台线程正常退出。"""
 
         if self.search_thread is not None and self.search_thread.isRunning():
-            self.status_bar.showMessage("Search is still running. Close after it finishes.")
+            self.close_requested = True
+            if self.search_worker is not None:
+                self.search_worker.cancel()
+            self.status_bar.showMessage("Cancelling search before closing...")
             event.ignore()
             return
         event.accept()
