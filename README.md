@@ -1,8 +1,9 @@
 # SaFtsearch
+**English** | [中文](README.zh-CN.md)
 
 SaFtsearch is an experimental desktop file search application built with Rust and Python.
 
-> Project status: under active development. The repository currently contains the basic framework, early CLI search logic, a first desktop UI shell, and learning documents. APIs, commands, configuration fields, and desktop integration may still change.
+> Project status: under active development. The repository currently contains the basic framework, early CLI search logic, and a first desktop UI shell. APIs, commands, configuration fields, and desktop integration may still change.
 
 ## Goals
 
@@ -65,7 +66,6 @@ SaFtsearch/
     tests/
       test_core_client.py
       test_search_service.py
-  docs/
 ```
 
 ## Quick Start
